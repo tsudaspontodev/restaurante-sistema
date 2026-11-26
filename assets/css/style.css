@@ -1,0 +1,70 @@
+/* assets/css/style.css */
+
+/* Efeito hover nos cards das mesas no Caixa */
+.mesa-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesa-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+}
+
+.mesa-card.mesa-atualizada {
+    animation: mesa-pulso 2s ease-out;
+}
+
+@keyframes mesa-pulso {
+    0%, 100% { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
+    25%, 65% { box-shadow: 0 0 0 .3rem rgba(255, 193, 7, .42), 0 .5rem 1rem rgba(0,0,0,.15); }
+}
+
+/* Destaque sutil no fundo conforme status da mesa */
+.mesa-livre {
+    background-color: #f4fbf7;
+}
+
+.mesa-ocupada {
+    background-color: #fff5f5;
+}
+
+.mesa-fechamento {
+    background-color: #fffdf0;
+    animation: pulsoFechamento 2s infinite;
+}
+
+@keyframes pulsoFechamento {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.5);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+    }
+}
+
+/* Botões Touch-Friendly para Tablet e Totem (Mobile First) */
+.btn-touch {
+    min-height: 48px;
+    font-size: 1.05rem;
+    border-radius: 10px;
+}
+
+/* Media Queries para adaptação de telas */
+@media (max-width: 576px) {
+    .mesa-card h3 {
+        font-size: 1.35rem;
+    }
+}
+
+@media (min-width: 992px) {
+
+    /* Interface compacta no desktop do caixa */
+    .mesa-card .card-body {
+        padding: 1rem;
+    }
+}
