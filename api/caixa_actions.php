@@ -128,23 +128,28 @@ try {
 
         $pdo->beginTransaction();
 
+        // Trava a mesa primeiro, na mesma ordem usada pelo tablet, para impedir
+        // novos lançamentos enquanto o caixa recebe a conta.
+        $stmtMesa = $pdo->prepare('SELECT id FROM mesas WHERE id = ? FOR UPDATE');
+        $stmtMesa->execute([$id_mesa]);
+        if (!$stmtMesa->fetchColumn()) throw new Exception('Mesa não encontrada.');
+
         // Calcula o total real dos itens do pedido aberto
         $stmtPed = $pdo->prepare("SELECT id FROM pedidos WHERE id_mesa = ? AND status_conta = 'aberta' LIMIT 1 FOR UPDATE");
         $stmtPed->execute([$id_mesa]);
         $pedido = $stmtPed->fetch();
 
-        if ($pedido) {
-            $stmtTotal = $pdo->prepare("SELECT COALESCE(SUM(quantidade * preco_unitario), 0) AS total FROM itens_pedido WHERE id_pedido = ?");
-            $stmtTotal->execute([$pedido['id']]);
-            $total = $stmtTotal->fetchColumn();
+        if (!$pedido) throw new Exception('A mesa não possui uma conta aberta.');
+        $stmtTotal = $pdo->prepare("SELECT COALESCE(SUM(quantidade * preco_unitario), 0) AS total FROM itens_pedido WHERE id_pedido = ?");
+        $stmtTotal->execute([$pedido['id']]);
+        $total = $stmtTotal->fetchColumn();
 
             $stmtFecha = $pdo->prepare("
                 UPDATE pedidos 
                 SET status_conta = 'fechada', total = ?, forma_pagamento = ?, data_fechamento = NOW() 
                 WHERE id = ?
             ");
-            $stmtFecha->execute([$total, $forma_pagamento, $pedido['id']]);
-        }
+        $stmtFecha->execute([$total, $forma_pagamento, $pedido['id']]);
 
         // Libera a mesa para o próximo cliente
         $pdo->prepare("UPDATE mesas SET status = 'livre' WHERE id = ?")->execute([$id_mesa]);

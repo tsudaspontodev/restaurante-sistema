@@ -9,7 +9,10 @@ try {
                    (SELECT MAX(TIMESTAMPDIFF(MINUTE, ip.timestamp_pedido, NOW())) FROM itens_pedido ip WHERE ip.id_pedido = p.id AND ip.status_item = 'na_cozinha') AS max_espera,
                    (SELECT COALESCE(SUM(ip.quantidade * ip.preco_unitario), 0) FROM itens_pedido ip WHERE ip.id_pedido = p.id) AS valor_parcial
             FROM mesas m
-            LEFT JOIN pedidos p ON p.id_mesa = m.id AND p.status_conta = 'aberta'
+            LEFT JOIN pedidos p ON p.id = (
+                SELECT MAX(p2.id) FROM pedidos p2
+                WHERE p2.id_mesa = m.id AND p2.status_conta = 'aberta'
+            )
             ORDER BY m.numero ASC";
     $mesas = $pdo->query($sql)->fetchAll();
     echo json_encode(['sucesso' => true, 'mesas' => $mesas], JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);

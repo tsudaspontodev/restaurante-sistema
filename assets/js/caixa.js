@@ -9,6 +9,19 @@ const escapeHtml = texto => String(texto ?? '').replace(/[&<>"']/g, c => ({
 const modalElement = document.getElementById('modalMesa');
 const modalBootstrap = new bootstrap.Modal(modalElement);
 
+function formularioLancamento() {
+    const opcoes = CAIXA_PRODUTOS.map(p => `<option value="${Number(p.id)}">${escapeHtml(p.nome)} — ${Number(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>`).join('');
+    return `<form id="formLancarItem" class="card card-body bg-light mb-3" data-mesa-id="${Number(mesaAtualId)}">
+        <label class="form-label fw-bold" for="produtoLancamento">Lançar Novo Produto na Mesa</label>
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md"><select class="form-select" id="produtoLancamento" required ${CAIXA_PRODUTOS.length ? '' : 'disabled'}><option value="">Selecione um produto</option>${opcoes}</select></div>
+            <div class="col-5 col-md-2"><label class="form-label small mb-1" for="quantidadeLancamento">Quantidade</label><input class="form-control" id="quantidadeLancamento" type="number" min="1" max="50" value="1" required></div>
+            <div class="col-7 col-md-auto"><button class="btn btn-primary w-100" type="submit" ${CAIXA_PRODUTOS.length ? '' : 'disabled'}><i class="bi bi-plus-circle me-1"></i>Lançar na Mesa</button></div>
+        </div>
+        ${CAIXA_PRODUTOS.length ? '' : '<div class="small text-danger mt-2">Não há produtos ativos cadastrados.</div>'}
+    </form>`;
+}
+
 // Abre o modal e carrega dados atualizados do servidor
 function abrirModalMesa(idMesa) {
     mesaAtualId = idMesa;
@@ -34,27 +47,13 @@ async function carregarDadosMesa(idMesa) {
         const numFormatado = String(data.mesa.numero).padStart(2, '0');
         titulo.innerHTML = `<i class="bi bi-table me-2"></i>Mesa ${numFormatado} — Status: ${escapeHtml(data.mesa.status.toUpperCase())}`;
 
-        // Caso 1: Mesa Livre
+        // Formulário disponível para mesa livre, ocupada ou em fechamento.
         if (data.mesa.status === 'livre') {
-            corpo.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
-                    <h5 class="mt-3">Esta mesa está livre no momento.</h5>
-                    <p class="text-muted">Você pode abri-la manualmente ou aguardar o cliente iniciar pelo Tablet.</p>
-                </div>
-            `;
-            corpo.scrollTop = rolagemCorpo;
-            rodape.innerHTML = `
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                <a class="btn btn-outline-warning" href="../tablet/index.php?mesa=${Number(data.mesa.numero)}" target="_blank" rel="noopener"><i class="bi bi-table me-1"></i>Abrir Tablet desta Mesa</a>
-                <button type="button" class="btn btn-success" onclick="abrirMesaManual(${idMesa})">
-                    <i class="bi bi-play-fill"></i> Abrir Mesa Agora
-                </button>
-            `;
+            corpo.innerHTML = `${formularioLancamento()}<div class="text-center py-4 text-muted"><i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i><h5 class="mt-3">Esta mesa está livre.</h5><p class="mb-0">O primeiro lançamento abrirá a mesa automaticamente.</p></div>`;
+            rodape.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button><a class="btn btn-outline-warning" href="../tablet/index.php?mesa=${Number(data.mesa.numero)}" target="_blank" rel="noopener"><i class="bi bi-table me-1"></i>Abrir Tablet desta Mesa</a>`;
             return;
         }
 
-        // Caso 2: Mesa Ocupada ou Aguardando Fechamento
         const banner = data.mesa.status === 'fechamento'
             ? '<div class="alert alert-warning fw-bold"><i class="bi bi-bell-fill me-2"></i>Cliente solicitou o fechamento da conta pelo tablet.</div>' : '';
         const linhas = data.itens.map(item => `<tr>
@@ -64,7 +63,7 @@ async function carregarDadosMesa(idMesa) {
             <td class="text-end">R$ ${Number(item.subtotal).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
             <td>${item.status_item === 'na_cozinha' ? `<button class="btn btn-sm btn-success" onclick="marcarEntregue(${Number(item.id)})"><i class="bi bi-check-lg"></i> Entregue</button>` : '<i class="bi bi-check2-all text-success"></i>'}</td>
         </tr>`).join('');
-        corpo.innerHTML = `${banner}${data.itens.length ? `<div class="table-responsive"><table class="table table-sm table-striped align-middle"><thead><tr><th>Horário</th><th>Qtd.</th><th>Produto</th><th>Status</th><th class="text-end">Subtotal</th><th>Ação</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="text-muted">Ainda não há lançamentos nesta mesa.</p>'}`;
+        corpo.innerHTML = `${formularioLancamento()}${banner}${data.itens.length ? `<div class="table-responsive"><table class="table table-sm table-striped align-middle"><thead><tr><th>Horário</th><th>Qtd.</th><th>Produto</th><th>Status</th><th class="text-end">Subtotal</th><th>Ação</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="text-muted">Ainda não há lançamentos nesta mesa.</p>'}`;
 
         rodape.innerHTML = `
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 w-100">
@@ -106,6 +105,33 @@ async function marcarEntregue(idItem) {
         alert(data.erro);
     }
 }
+
+modalElement.addEventListener('submit', async event => {
+    const form = event.target.closest('#formLancarItem');
+    if (!form) return;
+    event.preventDefault();
+    const botao = form.querySelector('button[type="submit"]');
+    const idProduto = Number(form.querySelector('#produtoLancamento').value);
+    const quantidade = Number(form.querySelector('#quantidadeLancamento').value);
+    if (!idProduto || !Number.isInteger(quantidade) || quantidade < 1 || quantidade > 50) {
+        alert('Selecione um produto e informe uma quantidade entre 1 e 50.');
+        return;
+    }
+    botao.disabled = true;
+    try {
+        const res = await fetch('api_mesa.php?acao=lancar_item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_mesa: mesaAtualId, id_produto: idProduto, quantidade })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sucesso) throw new Error(data.erro || 'Não foi possível lançar o produto.');
+        await Promise.all([carregarDadosMesa(mesaAtualId), atualizarMapaMesas()]);
+    } catch (erro) {
+        alert(erro.message);
+        botao.disabled = false;
+    }
+});
 
 async function abrirMesaManual(idMesa) {
     const res = await fetch('../api/caixa_actions.php?acao=abrir_mesa', {
