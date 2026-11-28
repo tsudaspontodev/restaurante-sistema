@@ -269,6 +269,7 @@ $stmtCategorias = $pdo->query(
      ORDER BY c.ordem ASC, c.nome ASC'
 );
 $categorias = $stmtCategorias->fetchAll(PDO::FETCH_ASSOC);
+$mesasNav = $pdo->query('SELECT numero FROM mesas ORDER BY numero ASC')->fetchAll(PDO::FETCH_ASSOC);
 
 // Busca produtos filtrados
 $sqlProdutos = 'SELECT p.id, p.id_categoria AS categoria_id, p.nome, p.descricao, p.preco, p.imagem_url,
@@ -313,6 +314,8 @@ unset($_SESSION['flash_sucesso'], $_SESSION['flash_erro']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Produtos e Categorias — Caixa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
             --bg: #f4f6f9;
@@ -349,6 +352,12 @@ unset($_SESSION['flash_sucesso'], $_SESSION['flash_erro']);
             max-width: 1240px;
             margin: 0 auto;
             padding: 24px 16px 48px;
+        }
+
+        .navbar .btn {
+            margin-bottom: 0;
+            padding: .25rem .5rem;
+            font-size: .875rem;
         }
 
         .topbar {
@@ -659,15 +668,12 @@ unset($_SESSION['flash_sucesso'], $_SESSION['flash_erro']);
 </head>
 
 <body>
+    <?php $paginaAtiva = 'produtos'; require __DIR__ . '/_navbar_gerencia.php'; ?>
     <div class="container">
         <div class="topbar">
             <div>
                 <h1>Produtos e Categorias</h1>
                 <p>Gerencie o catálogo, preços, imagens e disponibilidade do caixa</p>
-            </div>
-            <div class="nav-links">
-                <a href="dashboard.php" class="btn btn-outline">Dashboard BI</a>
-                <a href="index.php" class="btn btn-outline">Voltar ao Caixa</a>
             </div>
         </div>
 
@@ -964,6 +970,7 @@ unset($_SESSION['flash_sucesso'], $_SESSION['flash_erro']);
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (() => {
             const alertaBox = document.getElementById('alertaDinamico');

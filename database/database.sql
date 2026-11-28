@@ -8,6 +8,22 @@ CREATE TABLE mesas (
     status ENUM('livre', 'ocupada', 'fechamento') DEFAULT 'livre'
 );
 
+-- Clientes e endereços usados nos pedidos de delivery.
+CREATE TABLE clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(120) NOT NULL,
+    telefone VARCHAR(20) NOT NULL UNIQUE,
+    cep VARCHAR(10) NULL,
+    logradouro VARCHAR(150) NOT NULL,
+    numero VARCHAR(20) NOT NULL,
+    complemento VARCHAR(100) NULL,
+    bairro VARCHAR(100) NOT NULL,
+    cidade VARCHAR(100) NULL,
+    ponto_referencia VARCHAR(150) NULL,
+    observacoes TEXT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 2. Tabela de Categorias
 CREATE TABLE categorias (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -31,6 +47,10 @@ CREATE TABLE produtos (
 CREATE TABLE pedidos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     origem ENUM('totem', 'tablet', 'web') NOT NULL,
+    tipo_pedido ENUM('mesa', 'totem', 'delivery') NOT NULL DEFAULT 'mesa',
+    id_cliente INT NULL,
+    taxa_entrega DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    status_delivery ENUM('em_preparo', 'saiu_entrega', 'entregue', 'cancelado') NULL,
     tipo_consumo ENUM('local', 'viagem') DEFAULT 'local',
     id_mesa INT NULL,
     forma_pagamento VARCHAR(50) DEFAULT 'Dinheiro',
@@ -38,7 +58,8 @@ CREATE TABLE pedidos (
     total DECIMAL(10,2) DEFAULT 0.00,
     data_abertura DATETIME DEFAULT CURRENT_TIMESTAMP,
     data_fechamento DATETIME NULL,
-    FOREIGN KEY (id_mesa) REFERENCES mesas(id) ON DELETE SET NULL
+    FOREIGN KEY (id_mesa) REFERENCES mesas(id) ON DELETE SET NULL,
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE SET NULL
 );
 
 -- 5. Tabela de Itens do Pedido (Controle de Cozinha x Entregue)

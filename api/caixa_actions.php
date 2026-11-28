@@ -85,6 +85,7 @@ try {
             WHERE ip.id = ? AND ip.status_item = 'na_cozinha'
               AND (
                     (p.id_mesa IS NOT NULL AND p.status_conta = 'aberta')
+                 OR (p.tipo_pedido = 'delivery' AND p.status_conta = 'aberta')
                  OR (p.origem = 'totem' AND p.status_conta = 'fechada')
               )
         ");

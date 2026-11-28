@@ -151,6 +151,7 @@ $valoresTopProdutos = array_map(
     static fn(array $item): int => (int) $item['quantidade_vendida'],
     $maisVendidos
 );
+$mesasNav = $pdo->query('SELECT numero FROM mesas ORDER BY numero ASC')->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -159,6 +160,8 @@ $valoresTopProdutos = array_map(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard BI — Caixa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
         :root {
@@ -192,6 +195,12 @@ $valoresTopProdutos = array_map(
             max-width: 1280px;
             margin: 0 auto;
             padding: 24px 16px 48px;
+        }
+
+        .navbar .btn {
+            margin-bottom: 0;
+            padding: .25rem .5rem;
+            font-size: .875rem;
         }
 
         .topbar {
@@ -422,6 +431,7 @@ $valoresTopProdutos = array_map(
 </head>
 
 <body>
+    <?php $paginaAtiva = 'dashboard'; require __DIR__ . '/_navbar_gerencia.php'; ?>
     <div class="container">
         <div class="topbar">
             <div>
@@ -433,10 +443,6 @@ $valoresTopProdutos = array_map(
                 <?php if ($avisoData): ?>
                     <p style="color:#b42318; font-weight:600;"><?= htmlspecialchars($avisoData) ?></p>
                 <?php endif; ?>
-            </div>
-            <div class="nav-links">
-                <a href="produtos.php" class="btn btn-outline">Produtos e Categorias</a>
-                <a href="index.php" class="btn btn-outline">Voltar ao Caixa</a>
             </div>
         </div>
 
@@ -549,6 +555,7 @@ $valoresTopProdutos = array_map(
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (() => {
             const labelsDias = <?= json_encode($labelsDias, JSON_UNESCAPED_UNICODE) ?>;

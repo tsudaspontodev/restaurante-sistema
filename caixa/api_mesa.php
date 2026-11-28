@@ -3,6 +3,33 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config/db.php';
 try {
+    if (($_GET['acao'] ?? '') === 'iniciar_delivery') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new RuntimeException('Método não permitido.');
+        $dados = json_decode(file_get_contents('php://input'), true);
+        $idCliente = filter_var($dados['id_cliente'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        if (!$idCliente) throw new RuntimeException('Cliente inválido.');
+        $stmt = $pdo->prepare('SELECT id FROM clientes WHERE id=?'); $stmt->execute([$idCliente]);
+        if (!$stmt->fetchColumn()) throw new RuntimeException('Cliente não encontrado.');
+        $pdo->prepare("INSERT INTO pedidos (origem,tipo_pedido,tipo_consumo,id_mesa,id_cliente,status_conta,status_delivery) VALUES ('web','delivery','viagem',NULL,?,'aberta','em_preparo')")->execute([$idCliente]);
+        echo json_encode(['sucesso'=>true,'id_pedido'=>(int)$pdo->lastInsertId()], JSON_UNESCAPED_UNICODE); exit;
+    }
+    if (($_GET['acao'] ?? '') === 'lancar_delivery') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new RuntimeException('Método não permitido.');
+        $dados = json_decode(file_get_contents('php://input'), true);
+        $idPedido = filter_var($dados['id_pedido'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        $idProduto = filter_var($dados['id_produto'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
+        $quantidade = filter_var($dados['quantidade'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1,'max_range'=>50]]);
+        if (!$idPedido || !$idProduto || !$quantidade) throw new RuntimeException('Pedido, produto ou quantidade inválidos.');
+        $pdo->beginTransaction();
+        $stmt=$pdo->prepare("SELECT id FROM pedidos WHERE id=? AND tipo_pedido='delivery' AND status_conta='aberta' FOR UPDATE"); $stmt->execute([$idPedido]);
+        if (!$stmt->fetchColumn()) throw new RuntimeException('Pedido de delivery não encontrado ou já fechado.');
+        $stmt=$pdo->prepare('SELECT id,preco FROM produtos WHERE id=? AND ativo=1'); $stmt->execute([$idProduto]); $produto=$stmt->fetch();
+        if (!$produto) throw new RuntimeException('Produto indisponível.');
+        $pdo->prepare("INSERT INTO itens_pedido (id_pedido,id_produto,quantidade,preco_unitario,status_item,timestamp_pedido) VALUES (?,?,?,?,'na_cozinha',NOW())")->execute([$idPedido,$idProduto,$quantidade,$produto['preco']]);
+        $pdo->prepare('UPDATE pedidos SET total=total+? WHERE id=?')->execute([(float)$produto['preco']*$quantidade,$idPedido]);
+        $pdo->commit();
+        echo json_encode(['sucesso'=>true],JSON_UNESCAPED_UNICODE); exit;
+    }
     if (($_GET['acao'] ?? '') === 'lancar_item') {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new RuntimeException('Método não permitido.');
         $dados = json_decode(file_get_contents('php://input'), true);
